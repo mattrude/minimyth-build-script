@@ -1,9 +1,6 @@
 # /bin/bash
-# Version: 1.2 - 30-Jan-2007 - Matt Rude - info at mattrude dot com
 TFTPDIR=/tftpboot/PXEClient
-URL="http://www.minimyth.org/download/test/latest-trunk/"
-#URL="http://minimyth.org/download/stable/latest/"
-#URL="http://linpvr.org/minimyth/download/test/latest-svn"
+URL="http://minimyth.org/download/stable/latest/"
 ##############################################################################
 if [ -e $TFTPDIR/version ]; then
  mv $TFTPDIR/version $TFTPDIR/version.last
