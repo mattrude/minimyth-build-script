@@ -1,0 +1,62 @@
+# /bin/bash
+# Version: 1.2 - 30-Jan-2007 - Matt Rude - info at mattrude dot com
+TFTPDIR=/tftpboot/PXEClient
+URL="http://www.minimyth.org/download/test/latest-trunk/"
+#URL="http://minimyth.org/download/stable/latest/"
+#URL="http://linpvr.org/minimyth/download/test/latest-svn"
+##############################################################################
+if [ -e $TFTPDIR/version ]; then
+ mv $TFTPDIR/version $TFTPDIR/version.last
+ rm -rf $TFTPDIR/verstion.md5
+else
+ touch $TFTPDIR/version.log
+ touch $TFTPDIR/version.last
+fi
+
+cd $TFTPDIR
+wget -nc $URL/version > /dev/null 2>&1
+VER=`cat $TFTPDIR/version`
+OLDVER=`cat $TFTPDIR/version.last`
+
+if [ "$VER" = "$OLDVER" ]; then
+ chown -R apache:apache $TFTPDIR/*
+ exit 0
+else
+ echo "`date` Upgraded to version: $VER" >> version.log
+
+ rm -rf $TFTPDIR/ram-minimyth-*.tar.bz2.md5 
+ wget -nc $URL/ram-minimyth-$VER.tar.bz2 > /dev/null 2>&1
+ wget -nc $URL/ram-minimyth-$VER.tar.bz2.md5 > /dev/null 2>&1
+ MD5STAT=`md5sum -c ram-minimyth-$VER.tar.bz2.md5 |awk ' {print $2 }'`
+ if [ "$MD5STAT" = "OK" ]; then
+  rm -f $TFTPDIR/kerne*
+  rm -f $TFTPDIR/rootf*
+  rm -fr $TFTPDIR/conf/default/theme*
+  tar -xjf ram-minimyth-$VER.tar.bz2
+  rm -rf ram-minimyth-$VER.*
+ else
+  echo "`date` Minimyth Version $VER Failed the MD5 check" >> version.log
+  echo "" > $TFTPDIR/version
+  exit 1
+ fi
+
+ RAMDIR=$TFTPDIR/ram-minimyth-$VER
+
+ mkdir -p $TFTPDIR/conf/default
+ cp $RAMDIR/kernel $TFTPDIR/kernel-$VER
+ cp $RAMDIR/rootfs $TFTPDIR/rootfs-$VER
+ cp -r $RAMDIR/themes $TFTPDIR/conf/default/themes-$VER
+
+ ln -s kernel-$VER kernel
+ ln -s rootfs-$VER rootfs
+ cd $TFTPDIR/conf/default
+ ln -s themes-$VER themes
+ #mythtvosd --template=scroller --scroll_text="minimyth upgraded to: $VER" > /dev/null
+fi
+
+cd $TFTPDIR
+mv version.log version.tmp
+tail -2 version.tmp > version.log
+rm -rf version.tmp
+chown -R apache:apache $TFTPDIR/*
+exit 0
